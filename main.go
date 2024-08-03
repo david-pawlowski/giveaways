@@ -24,7 +24,7 @@ type Code struct {
 }
 
 type Giveaway interface {
-	Add(id int, code Code)
+	Add(code Code) (Code, error)
 	Get(id int) (Code, error)
 	MarkClaimed(id int) bool
 }
@@ -60,9 +60,23 @@ func (gh *GiveawayHandler) GetCode(w http.ResponseWriter, r *http.Request) {
 
 func (gh *GiveawayHandler) CreateCode(w http.ResponseWriter, r *http.Request) {
 	var code Code
-	json.NewDecoder(r.Body).Decode(&code)
-	gh.giveaway.Add(2, code)
+
+	defer r.Body.Close()
+
+	err := json.NewDecoder(r.Body).Decode(&code)
+	if err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+	}
+
+	code, err = gh.giveaway.Add(code)
+	fmt.Print(code)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Can't create code with this id"))
+		return
+	}
 	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(code)
 }
 
 func (gh *GiveawayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
