@@ -27,6 +27,7 @@ type Giveaway interface {
 	Add(code Code) (Code, error)
 	Get(id int) (Code, error)
 	MarkClaimed(id int) bool
+	GetRandomCode() (Code, error)
 }
 
 type GiveawayHandler struct {
@@ -69,7 +70,6 @@ func (gh *GiveawayHandler) CreateCode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	code, err = gh.giveaway.Add(code)
-	fmt.Print(code)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Can't create code with this id"))
@@ -79,12 +79,29 @@ func (gh *GiveawayHandler) CreateCode(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(code)
 }
 
+func (gh *GiveawayHandler) GetRandomCode(w http.ResponseWriter, r *http.Request) {
+	code, err := gh.giveaway.GetRandomCode()
+	if err == ErrNoCodes {
+		w.Write([]byte("No more codes available"))
+		return
+	}
+	if err != nil {
+		http.Error(w, "Something wrong happen", http.StatusBadRequest)
+	}
+	w.WriteHeader(http.StatusOK)
+	jsonResp, err := json.Marshal(code)
+	if err != nil {
+		fmt.Print(err)
+	}
+	w.Write(jsonResp)
+}
+
 func (gh *GiveawayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	switch r.Method {
 	case http.MethodGet:
-		gh.GetCode(w, r)
+		gh.GetRandomCode(w, r)
 	case http.MethodPost:
 		gh.CreateCode(w, r)
 	}
