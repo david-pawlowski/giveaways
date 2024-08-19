@@ -70,6 +70,7 @@ func (gh *GiveawayHandler) GetRandomCode(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "Something wrong happen", http.StatusBadRequest)
 	}
 	w.WriteHeader(http.StatusOK)
+
 	jsonResp, err := json.Marshal(code)
 	if err != nil {
 		fmt.Print(err)
@@ -80,6 +81,8 @@ func (gh *GiveawayHandler) GetRandomCode(w http.ResponseWriter, r *http.Request)
 func (gh *GiveawayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	switch r.Method {
 	case http.MethodGet:
 		gh.GetRandomCode(w, r)
