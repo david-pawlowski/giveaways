@@ -2,13 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/david-pawlowski/giveaway/models"
 	"github.com/david-pawlowski/giveaway/repository"
 	"github.com/david-pawlowski/giveaway/service"
 	"net/http"
-	"strconv"
-	"strings"
 )
 
 type GiveawayHandler struct {
@@ -21,27 +18,8 @@ func NewGiveawayHandler(g service.GiveawayService) *GiveawayHandler {
 	}
 }
 
-func (gh *GiveawayHandler) GetCode(w http.ResponseWriter, r *http.Request) {
-	path := strings.Split(r.URL.EscapedPath(), "/")
-	id, err := strconv.Atoi(path[len(path)-1])
-	data, err := gh.giveaway.Get(id)
-	if err == repository.ErrNotFound {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("Not found item for given id"))
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	jsonResp, err := json.Marshal(data)
-	if err != nil {
-		fmt.Print(err)
-	}
-	gh.giveaway.MarkClaimed(id)
-	w.Write(jsonResp)
-	return
-}
-
 func (gh *GiveawayHandler) CreateCode(w http.ResponseWriter, r *http.Request) {
-	var code models.Code
+	var code models.Giveaway
 
 	defer r.Body.Close()
 
@@ -50,12 +28,8 @@ func (gh *GiveawayHandler) CreateCode(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 	}
 
-	code, err = gh.giveaway.Add(code)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Can't create code with this id"))
-		return
-	}
+	gh.giveaway.Add(code)
+
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(code)
 }
@@ -63,26 +37,24 @@ func (gh *GiveawayHandler) CreateCode(w http.ResponseWriter, r *http.Request) {
 func (gh *GiveawayHandler) GetRandomCode(w http.ResponseWriter, r *http.Request) {
 	code, err := gh.giveaway.GetRandomCode()
 	if err == repository.ErrNoCodes {
-		w.Write([]byte("No more codes available"))
+		http.Error(w, "No more codes left", http.StatusBadRequest)
 		return
 	}
-	if err != nil {
-		http.Error(w, "Something wrong happen", http.StatusBadRequest)
-	}
-	w.WriteHeader(http.StatusOK)
 
 	jsonResp, err := json.Marshal(code)
 	if err != nil {
-		fmt.Print(err)
+		http.Error(w, "Something wrong happen", http.StatusBadRequest)
+		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResp)
+	return
 }
 
 func (gh *GiveawayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	switch r.Method {
 	case http.MethodGet:
 		gh.GetRandomCode(w, r)

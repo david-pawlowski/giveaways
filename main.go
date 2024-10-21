@@ -4,19 +4,24 @@ import (
 	"github.com/david-pawlowski/giveaway/handlers"
 	"github.com/david-pawlowski/giveaway/repository"
 	"github.com/david-pawlowski/giveaway/service"
+	"github.com/rs/cors"
 	"net/http"
 )
 
 func main() {
-	store := repository.NewInMemoryStore()
-	giveawayService := service.NewGiveawayService(store)
+	store := repository.InMemoryStore{}
+	giveawayService := service.NewGiveawayService(&store)
 	giveawayHandler := handlers.NewGiveawayHandler(giveawayService)
-	homeHandler := &handlers.HomeHandler{}
 
 	mux := http.NewServeMux()
-	mux.Handle("/", homeHandler)
-	mux.Handle("/codes/", giveawayHandler)
-	mux.Handle("/codes", giveawayHandler)
+	mux.Handle("/", giveawayHandler)
 
-	http.ListenAndServe(":8080", mux)
+	corsHandler := cors.New(cors.Options{
+		AllowedOrigins:   []string{"https://main.d3ue8i9jys9zyg.amplifyapp.com/"},
+		AllowedMethods:   []string{"GET"},
+		AllowedHeaders:   []string{"Content-Type"},
+		AllowCredentials: true,
+	})
+
+	http.ListenAndServe(":8080", corsHandler.Handler(mux))
 }

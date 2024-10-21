@@ -6,10 +6,8 @@ import (
 )
 
 type GiveawayService interface {
-	Add(code models.Code) (models.Code, error)
-	Get(id int) (models.Code, error)
-	MarkClaimed(id int) bool
-	GetRandomCode() (models.Code, error)
+	Add(giveaway models.Giveaway)
+	GetRandomCode() (models.Giveaway, error)
 }
 
 type giveawayService struct {
@@ -22,18 +20,10 @@ func NewGiveawayService(store *repository.InMemoryStore) GiveawayService {
 	}
 }
 
-func (gs *giveawayService) Add(code models.Code) (models.Code, error) {
-	return gs.store.Add(code)
+func (gs *giveawayService) Add(giveaway models.Giveaway) {
+	gs.store.Add(giveaway)
 }
 
-func (gs *giveawayService) Get(id int) (models.Code, error) {
-	return gs.store.Get(id)
-}
-
-func (gs *giveawayService) MarkClaimed(id int) bool {
-	return gs.store.MarkClaimed(id)
-}
-
-func (gs *giveawayService) GetRandomCode() (models.Code, error) {
+func (gs *giveawayService) GetRandomCode() (models.Giveaway, error) {
 	return gs.store.GetRandomCode()
 }
