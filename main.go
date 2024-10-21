@@ -1,4 +1,3 @@
-// TODO: dotenv should be local only
 package main
 
 import (

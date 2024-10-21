@@ -5,7 +5,7 @@ import (
 	"github.com/david-pawlowski/giveaway/models"
 )
 
-var ErrNoCodes = errors.New("You used all my codes already!!!")
+var ErrNoCodes = errors.New("You used all of my codes already!!!")
 
 type InMemoryStore []*models.Giveaway
 
