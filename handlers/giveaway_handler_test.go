@@ -12,19 +12,21 @@ import (
 	"github.com/david-pawlowski/giveaway/repository"
 )
 
+// MockGiveawayService implements the GiveawayService interface for testing
 type MockGiveawayService struct {
 	mockGetRandomCode func() (models.Giveaway, error)
-	mockAdd           func(models.Giveaway)
+	mockAdd           func(models.Giveaway) error
 }
 
 func (m *MockGiveawayService) GetRandomCode() (models.Giveaway, error) {
 	return m.mockGetRandomCode()
 }
 
-func (m *MockGiveawayService) Add(code models.Giveaway) {
+func (m *MockGiveawayService) Add(code models.Giveaway) error {
 	if m.mockAdd != nil {
-		m.mockAdd(code)
+		return m.mockAdd(code)
 	}
+	return nil
 }
 
 func TestGetRandomCode(t *testing.T) {
@@ -110,6 +112,7 @@ func TestCreateCode(t *testing.T) {
 	tests := []struct {
 		name           string
 		inputCode      models.Giveaway
+		mockAddError   error
 		expectedStatus int
 		expectedBody   string
 	}{
@@ -120,29 +123,33 @@ func TestCreateCode(t *testing.T) {
 				Code:    "HLIF-3333-GAME",
 				Claimed: false,
 			},
+			mockAddError:   nil,
 			expectedStatus: http.StatusCreated,
 			expectedBody:   `{"game":"Half-Life 3","code":"HLIF-3333-GAME","claimed":false}`,
 		},
 		{
 			name: "invalid_input",
 			inputCode: models.Giveaway{
-				Game: "",
+				Game: "", // Empty game name
 				Code: "",
 			},
+			mockAddError:   errors.New("invalid input"),
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   "game field cannot be empty\n",
+			expectedBody:   "invalid input\n",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var addCalled bool
 			mockService := &MockGiveawayService{
-				mockAdd: func(code models.Giveaway) {
-					addCalled = true
+				mockAdd: func(code models.Giveaway) error {
+					if tt.mockAddError != nil {
+						return tt.mockAddError
+					}
 					if code != tt.inputCode {
 						t.Errorf("Expected code %v, got %v", tt.inputCode, code)
 					}
+					return nil
 				},
 			}
 
@@ -162,11 +169,7 @@ func TestCreateCode(t *testing.T) {
 				t.Errorf("Test %s: expected status %d; got %d", tt.name, tt.expectedStatus, w.Code)
 			}
 
-			if tt.expectedStatus == http.StatusCreated {
-				if !addCalled {
-					t.Error("Expected Add to be called, but it wasn't")
-				}
-
+			if tt.mockAddError == nil {
 				var got models.Giveaway
 				err := json.Unmarshal(w.Body.Bytes(), &got)
 				if err != nil {

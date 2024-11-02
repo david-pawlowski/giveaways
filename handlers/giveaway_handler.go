@@ -24,21 +24,19 @@ func NewGiveawayHandler(g service.GiveawayService) *GiveawayHandler {
 func (h *GiveawayHandler) CreateCode(w http.ResponseWriter, r *http.Request) {
 	var code models.Giveaway
 
-	err := json.NewDecoder(r.Body).Decode(&code)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&code); err != nil {
 		log.Printf("Error decoding JSON in CreateCode: %v", err)
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
-	if err := code.Validate(); err != nil {
-		log.Printf("Validation error in CreateCode: %v", err)
+	if err := h.giveaway.Add(code); err != nil {
+		log.Printf("Error adding code: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	h.giveaway.Add(code)
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(code); err != nil {
 		log.Printf("Error encoding response in CreateCode: %v", err)
