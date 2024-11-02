@@ -21,8 +21,8 @@ func initDotEnv() {
 
 func main() {
 	initDotEnv()
-	store := repository.InMemoryStore{}
-	givServ, err := service.NewGiveawayService(&store)
+	store := repository.NewInMemoryStore()
+	givServ, err := service.NewGiveawayService(store)
 	if err != nil {
 		log.Fatal("Error connection to database failed.")
 	}

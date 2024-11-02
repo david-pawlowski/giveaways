@@ -2,9 +2,11 @@ package service
 
 import (
 	"errors"
+	"log"
+	"sync"
+
 	"github.com/david-pawlowski/giveaway/models"
 	"github.com/david-pawlowski/giveaway/repository"
-	"log"
 )
 
 type GiveawayService interface {
@@ -13,10 +15,11 @@ type GiveawayService interface {
 }
 
 type giveawayService struct {
-	store *repository.InMemoryStore
+	store repository.GiveawayRepository
+	mutex sync.RWMutex
 }
 
-func NewGiveawayService(store *repository.InMemoryStore) (GiveawayService, error) {
+func NewGiveawayService(store repository.GiveawayRepository) (GiveawayService, error) {
 	if store == nil {
 		return nil, errors.New("store cannot be nil")
 	}
