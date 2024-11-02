@@ -2,10 +2,13 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
+	"log"
+	"net/http"
+
 	"github.com/david-pawlowski/giveaway/models"
 	"github.com/david-pawlowski/giveaway/repository"
 	"github.com/david-pawlowski/giveaway/service"
-	"net/http"
 )
 
 type GiveawayHandler struct {
@@ -18,47 +21,54 @@ func NewGiveawayHandler(g service.GiveawayService) *GiveawayHandler {
 	}
 }
 
-func (gh *GiveawayHandler) CreateCode(w http.ResponseWriter, r *http.Request) {
+func (h *GiveawayHandler) CreateCode(w http.ResponseWriter, r *http.Request) {
 	var code models.Giveaway
 
 	defer r.Body.Close()
 
 	err := json.NewDecoder(r.Body).Decode(&code)
 	if err != nil {
+		log.Printf("Error decoding JSON in CreateCode: %v", err)
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
 	}
 
-	gh.giveaway.Add(code)
+	h.giveaway.Add(code)
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(code)
+	if err := json.NewEncoder(w).Encode(code); err != nil {
+		log.Printf("Error encoding response in CreateCode: %v", err)
+		http.Error(w, "Encoding error", http.StatusInternalServerError)
+	}
 }
 
-func (gh *GiveawayHandler) GetRandomCode(w http.ResponseWriter, r *http.Request) {
-	code, err := gh.giveaway.GetRandomCode()
-	if err == repository.ErrNoCodes {
-		http.Error(w, "No more codes left", http.StatusBadRequest)
-		return
-	}
-
-	jsonResp, err := json.Marshal(code)
+func (h *GiveawayHandler) GetRandomCode(w http.ResponseWriter, r *http.Request) {
+	code, err := h.giveaway.GetRandomCode()
 	if err != nil {
-		http.Error(w, "Something wrong happen", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, repository.ErrNoCodes):
+			http.Error(w, "We are out of codes.", http.StatusBadRequest)
+		default:
+			log.Printf("Eror getting code: %v", err)
+		}
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write(jsonResp)
-	return
+	err = json.NewEncoder(w).Encode(code)
+	if err != nil {
+		http.Error(w, "Something wrong happen", http.StatusBadRequest)
+		log.Printf("Encoding json error when getting random code, details: %v", err)
+		return
+	}
 }
 
-func (gh *GiveawayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *GiveawayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	switch r.Method {
 	case http.MethodGet:
-		gh.GetRandomCode(w, r)
+		h.GetRandomCode(w, r)
 	case http.MethodPost:
-		gh.CreateCode(w, r)
+		h.CreateCode(w, r)
 	}
 }
