@@ -22,7 +22,10 @@ func initDotEnv() {
 func main() {
 	initDotEnv()
 	store := repository.InMemoryStore{}
-	givServ := service.NewGiveawayService(&store)
+	givServ, err := service.NewGiveawayService(&store)
+	if err != nil {
+		log.Fatal("Error connection to database failed.")
+	}
 	givHan := handlers.NewGiveawayHandler(givServ)
 
 	mux := http.NewServeMux()

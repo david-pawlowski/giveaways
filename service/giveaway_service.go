@@ -2,10 +2,9 @@ package service
 
 import (
 	"errors"
-	"log"
-
 	"github.com/david-pawlowski/giveaway/models"
 	"github.com/david-pawlowski/giveaway/repository"
+	"log"
 )
 
 type GiveawayService interface {
@@ -29,6 +28,7 @@ func NewGiveawayService(store *repository.InMemoryStore) (GiveawayService, error
 func (gs *giveawayService) Add(giveaway models.Giveaway) error {
 	if err := giveaway.Validate(); err != nil {
 		log.Printf("Invalid giveaway data: %v", err)
+		return err
 	}
 	gs.store.Add(giveaway)
 	return nil
