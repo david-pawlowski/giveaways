@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/david-pawlowski/giveaway/handlers"
 	"github.com/david-pawlowski/giveaway/repository"
@@ -38,6 +42,23 @@ func loadConfig() (*Config, error) {
 	}, nil
 }
 
+func setupServer(cfg *Config, handler http.Handler) *http.Server {
+	corsMiddleware := cors.New(cors.Options{
+		AllowedOrigins:   []string{cfg.FrontendURL},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
+		AllowedHeaders:   []string{"Content-Type"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	})
+
+	return &http.Server{
+		Addr:         ":" + cfg.Port,
+		Handler:      corsMiddleware.Handler(handler),
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+	}
+}
+
 func main() {
 	cfg, err := loadConfig()
 	if err != nil {
@@ -47,19 +68,37 @@ func main() {
 	store := repository.NewInMemoryStore()
 	givServ, err := service.NewGiveawayService(store)
 	if err != nil {
-		log.Fatal("Error connection to database failed.")
+		log.Fatalf("Error connection to database failed: %v", err)
 	}
 	givHan := handlers.NewGiveawayHandler(givServ)
 
 	mux := http.NewServeMux()
 	mux.Handle("/", givHan)
 
-	corsHandler := cors.New(cors.Options{
-		AllowedOrigins:   []string{cfg.FrontendURL},
-		AllowedMethods:   []string{"GET"},
-		AllowedHeaders:   []string{"Content-Type"},
-		AllowCredentials: true,
-	})
+	server := setupServer(cfg, mux)
 
-	http.ListenAndServe(":"+cfg.Port, corsHandler.Handler(mux))
+	done := make(chan bool, 1)
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-quit
+		log.Println("Server is shutting down...")
+
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		server.SetKeepAlivesEnabled(false)
+		if err := server.Shutdown(ctx); err != nil {
+			log.Fatalf("Couldn't shutdown server: %v", err)
+		}
+		close(done)
+	}()
+
+	log.Printf("Server is starting on port %s...", cfg.Port)
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("Could not listen on port %s: %v", cfg.Port, err)
+	}
+	<-done
+	log.Println("Server stopped")
 }
