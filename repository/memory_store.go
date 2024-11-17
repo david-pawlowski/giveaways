@@ -2,20 +2,41 @@ package repository
 
 import (
 	"errors"
+	"sync"
+
 	"github.com/david-pawlowski/giveaway/models"
 )
 
-var ErrNoCodes = errors.New("You used all my codes already!!!")
+var ErrNoCodes = errors.New("you used all of my codes already!!!")
 
-type InMemoryStore []*models.Giveaway
+type InMemoryStore struct {
+	codes []*models.Giveaway
+	mutex sync.RWMutex
+}
 
-func (s *InMemoryStore) Add(code models.Giveaway) {
-	(*s) = append((*s), &code)
+func NewInMemoryStore() *InMemoryStore {
+	return &InMemoryStore{
+		codes: make([]*models.Giveaway, 0),
+	}
+}
+
+func (s *InMemoryStore) Add(code models.Giveaway) error {
+	if err := code.Validate(); err != nil {
+		return err
+	}
+
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	s.codes = append(s.codes, &code)
+	return nil
 }
 
 func (s *InMemoryStore) GetRandomCode() (models.Giveaway, error) {
-	for i := range *s {
-		giveaway := (*s)[i]
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	for _, giveaway := range s.codes {
 		if !giveaway.Claimed {
 			giveaway.Claimed = true
 			return *giveaway, nil
