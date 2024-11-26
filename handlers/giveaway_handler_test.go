@@ -40,7 +40,13 @@ func TestGetRandomCode(t *testing.T) {
 		{
 			name: "successful_retrieval",
 			mockResponse: models.Giveaway{
-				Game:    "Cyberpunk 2077",
+				Game: &models.Game{
+					ID:           1,
+					Name:         "Cyberpunk 2077",
+					Category:     "Test",
+					DevelopedBy:  "Valve",
+					PrimaryImage: "http://test.cdn/image1",
+				},
 				Code:    "ABCD-1234-EFGH",
 				Claimed: false,
 			},
@@ -119,7 +125,13 @@ func TestCreateCode(t *testing.T) {
 		{
 			name: "successful_creation",
 			inputCode: models.Giveaway{
-				Game:    "Half-Life 3",
+				Game: &models.Game{
+					ID:           1,
+					Name:         "Cyberpunk 2077",
+					Category:     "Test",
+					DevelopedBy:  "Valve",
+					PrimaryImage: "http://test.cdn/image1",
+				},
 				Code:    "HLIF-3333-GAME",
 				Claimed: false,
 			},
@@ -130,7 +142,7 @@ func TestCreateCode(t *testing.T) {
 		{
 			name: "invalid_input",
 			inputCode: models.Giveaway{
-				Game: "", // Empty game name
+				Game: nil, // Empty game name
 				Code: "",
 			},
 			mockAddError:   errors.New("invalid input"),

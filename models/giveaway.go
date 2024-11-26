@@ -8,13 +8,13 @@ var (
 )
 
 type Giveaway struct {
-	Game    string `json:"game"`
+	Game    *Game  `json:"game"`
 	Code    string `json:"code"`
 	Claimed bool   `json:"claimed"`
 }
 
 func (g *Giveaway) Validate() error {
-	if g.Game == "" {
+	if g.Game == nil {
 		return ErrEmptyGame
 	}
 	if g.Code == "" {

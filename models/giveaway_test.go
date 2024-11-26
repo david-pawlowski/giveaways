@@ -11,7 +11,13 @@ func TestGiveaway_Validate(t *testing.T) {
 		{
 			name: "valid_code",
 			code: Giveaway{
-				Game:    "Half-Life 3",
+				Game: &Game{
+					ID:           1,
+					Name:         "Half-Life 3",
+					Category:     "Test",
+					DevelopedBy:  "Valve",
+					PrimaryImage: "http://test.cdn/image1",
+				},
 				Code:    "HLIF-3333-GAME",
 				Claimed: false,
 			},
@@ -20,7 +26,7 @@ func TestGiveaway_Validate(t *testing.T) {
 		{
 			name: "empty_game",
 			code: Giveaway{
-				Game:    "",
+				Game:    nil,
 				Code:    "HLIF-3333-GAME",
 				Claimed: false,
 			},
@@ -29,7 +35,13 @@ func TestGiveaway_Validate(t *testing.T) {
 		{
 			name: "empty_code",
 			code: Giveaway{
-				Game:    "Half-Life 3",
+				Game: &Game{
+					ID:           1,
+					Name:         "Half-Life 3",
+					Category:     "Test",
+					DevelopedBy:  "Valve",
+					PrimaryImage: "http://test.cdn/image1",
+				},
 				Code:    "",
 				Claimed: false,
 			},
@@ -38,7 +50,7 @@ func TestGiveaway_Validate(t *testing.T) {
 		{
 			name: "both_empty",
 			code: Giveaway{
-				Game:    "",
+				Game:    nil,
 				Code:    "",
 				Claimed: false,
 			},
