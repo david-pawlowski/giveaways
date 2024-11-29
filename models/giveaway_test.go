@@ -1,6 +1,9 @@
 package models
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestGiveaway_Validate(t *testing.T) {
 	tests := []struct {
@@ -11,36 +14,48 @@ func TestGiveaway_Validate(t *testing.T) {
 		{
 			name: "valid_code",
 			code: Giveaway{
-				Game:    "Half-Life 3",
-				Code:    "HLIF-3333-GAME",
-				Claimed: false,
+				Game:         "Half-Life 3",
+				Code:         "HLIF-3333-GAME",
+				Claimed:      false,
+				CreatedAt:    time.Now(),
+				Expires:      time.Now().Add(time.Hour),
+				PrimaryImage: "http://test.go",
 			},
 			wantErr: nil,
 		},
 		{
 			name: "empty_game",
 			code: Giveaway{
-				Game:    "",
-				Code:    "HLIF-3333-GAME",
-				Claimed: false,
+				Game:         "",
+				Code:         "HLIF-3333-GAME",
+				Claimed:      false,
+				CreatedAt:    time.Now(),
+				Expires:      time.Now().Add(time.Hour),
+				PrimaryImage: "http://test.go",
 			},
 			wantErr: ErrEmptyGame,
 		},
 		{
 			name: "empty_code",
 			code: Giveaway{
-				Game:    "Half-Life 3",
-				Code:    "",
-				Claimed: false,
+				Game:         "Half-Life 3",
+				Code:         "",
+				Claimed:      false,
+				CreatedAt:    time.Now(),
+				Expires:      time.Now().Add(time.Hour),
+				PrimaryImage: "http://test.go",
 			},
 			wantErr: ErrEmptyCode,
 		},
 		{
 			name: "both_empty",
 			code: Giveaway{
-				Game:    "",
-				Code:    "",
-				Claimed: false,
+				Game:         "",
+				Code:         "",
+				Claimed:      false,
+				CreatedAt:    time.Now(),
+				Expires:      time.Now().Add(time.Hour),
+				PrimaryImage: "http://test.go",
 			},
 			wantErr: ErrEmptyGame, // Will return first error encountered
 		},
