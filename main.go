@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -23,9 +22,7 @@ type Config struct {
 }
 
 func loadConfig() (*Config, error) {
-	if err := godotenv.Load(".env"); err != nil {
-		return nil, fmt.Errorf("Error loading .env: %w", err)
-	}
+	godotenv.Load(".env")
 	port := os.Getenv("PORT")
 	if port == "" {
 		DEFAULT_PORT := "8080"

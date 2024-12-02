@@ -18,5 +18,6 @@ FROM golang:latest
 WORKDIR /
 
 COPY --from=builder /main .
+EXPOSE 8080
 
 CMD ["/main"]
